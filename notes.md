@@ -13,3 +13,7 @@ Emm I read the pdf and it's a bit hard to split this project into tasks tbh. Fro
 
 1. Taking the average from the proba array (array returned by experiment function) - but then there is a problem with decisiion trees for example, cause I think they do not return probabilities of predictions. hmm so maybe some other metric, maybe just do train test splits and truncate the output to 1000. Maybe experiment with features this way, reduce their amount so that the number of predicted in y_test is closer to 1000, hmm but then when you reduce the number of features you are probabily lowering the quality of the predictions
 2. The higher the average the better the model
+
+## Process
+
+1. Do the experiments in batches. Then look at some graphs and decide in which direction you should go, what parameter values you should test to obtain the best results.
