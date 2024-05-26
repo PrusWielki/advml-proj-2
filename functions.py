@@ -25,6 +25,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_score
 import time
 
@@ -115,6 +116,8 @@ class ModelType(Enum):
 
     HistGradientBoosting = 6
 
+    MLPClassifier = 7
+
 
 # %%
 def getModel(modelType, arguments):
@@ -149,6 +152,10 @@ def getModel(modelType, arguments):
         case ModelType.HistGradientBoosting:
 
             return HistGradientBoostingClassifier(**arguments)
+
+        case ModelType.MLPClassifier:
+
+            return MLPClassifier(**arguments)
 
 
 # %%
@@ -278,7 +285,7 @@ def getScoreLimited(y_true, y_pred, featuresUsed, limit):
             correct += 1
 
     score = 10 * correct - 200 * featuresUsed
-    return correct, score
+    return correct, score / (amounToTake * 10 - 400)
 
 
 # %%
@@ -287,21 +294,22 @@ def performExperiment(X_train, y_train, X_test, y_test, model, limit, getLimited
 
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-
     numberOfFeatures = len(X_train[0])
-
-    accuracy = accuracy_score(y_test, y_pred)
 
     correct = 0
     score = 0
+    accuracy = 0
+    precision = 0
 
     if getLimitedScore:
-        correct, score = getScoreLimited(
-            y_test, model.predict_proba(X_test), numberOfFeatures, limit
-        )
+        y_pred = model.predict_proba(X_test)
+        accuracy = accuracy_score(y_test, np.argmax(y_pred, axis=1))
+        precision = precision_score(y_test, np.argmax(y_pred, axis=1))
+        correct, score = getScoreLimited(y_test, y_pred, numberOfFeatures, limit)
     else:
-
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred)
         correct, score = getScore(y_test, y_pred, numberOfFeatures)
     # finalResult = getScore(y_test, y_pred, model["classification"].n_features_in_)
 
@@ -313,7 +321,7 @@ def performExperiment(X_train, y_train, X_test, y_test, model, limit, getLimited
 
     # finalResult = np.sort(result[:, 1])[::-1][:1000]
 
-    return correct, score, accuracy, numberOfFeatures, precision_score(y_test, y_pred)
+    return correct, score, accuracy, numberOfFeatures, precision
 
 
 # %%
