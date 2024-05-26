@@ -44,6 +44,8 @@ RESULTS_COLUMNS = [
 # %%
 POSITIVE_CLASS_LABEL = 1
 
+Y_LIMIT_PERCENT = 0.8
+
 # %% [markdown]
 # # Functions
 
@@ -250,8 +252,37 @@ def getScore(y_true, y_pred, featuresUsed):
     return correct, score
 
 
+def getScoreLimited(y_true, y_pred, featuresUsed, limit):
+    """Get score based on y_true, y_pred and number of feature used
+
+    Scoring function, based on which, the best model is selected.
+    Score is calculated according to task description: +10 points for each
+    correctly classified positive class, -200 points for each feature used
+    """
+
+    amounToTake = int(limit * len(y_true[y_true == 1]))
+
+    df = pd.DataFrame(y_pred[:, 1], columns=["result"])
+    sortedDf = df.sort_values(by="result", ascending=False).head(amounToTake)
+
+    y_predicted = np.zeros_like(y_true)
+
+    y_predicted[sortedDf.index] = 1
+
+    score = 0
+
+    correct = 0
+
+    for i, y in enumerate(y_true):
+        if y == POSITIVE_CLASS_LABEL and y == y_predicted[i]:
+            correct += 1
+
+    score = 10 * correct - 200 * featuresUsed
+    return correct, score
+
+
 # %%
-def performExperiment(X_train, y_train, X_test, y_test, model):
+def performExperiment(X_train, y_train, X_test, y_test, model, limit, getLimitedScore):
     """Returns a score for given model and provided data"""
 
     model.fit(X_train, y_train)
@@ -262,7 +293,16 @@ def performExperiment(X_train, y_train, X_test, y_test, model):
 
     accuracy = accuracy_score(y_test, y_pred)
 
-    correct, score = getScore(y_test, y_pred, numberOfFeatures)
+    correct = 0
+    score = 0
+
+    if getLimitedScore:
+        correct, score = getScoreLimited(
+            y_test, model.predict_proba(X_test), numberOfFeatures, limit
+        )
+    else:
+
+        correct, score = getScore(y_test, y_pred, numberOfFeatures)
     # finalResult = getScore(y_test, y_pred, model["classification"].n_features_in_)
 
     #
@@ -277,7 +317,9 @@ def performExperiment(X_train, y_train, X_test, y_test, model):
 
 
 # %%
-def conductExperiments(models, featureSelectors, X_orig, y_orig):
+def conductExperiments(
+    models, featureSelectors, X_orig, y_orig, limit=0.8, getLimitedScore=False
+):
     """Collects score results for all provided models and feature selectors on given dataset
 
     Parameters:
@@ -344,6 +386,8 @@ def conductExperiments(models, featureSelectors, X_orig, y_orig):
                                     X_test=X_split_test,
                                     y_test=y_split_test,
                                     model=getModel(model["model"], modelParameters),
+                                    limit=limit,
+                                    getLimitedScore=getLimitedScore,
                                 )
 
                                 results.append(
