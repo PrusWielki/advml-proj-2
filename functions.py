@@ -24,7 +24,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    GradientBoostingClassifier,
+    AdaBoostClassifier,
+    VotingClassifier,
+)
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_score
 import time
@@ -118,6 +123,10 @@ class ModelType(Enum):
 
     MLPClassifier = 7
 
+    ADABoost = 8
+
+    Voting = 9
+
 
 # %%
 def getModel(modelType, arguments):
@@ -156,6 +165,14 @@ def getModel(modelType, arguments):
         case ModelType.MLPClassifier:
 
             return MLPClassifier(**arguments)
+
+        case ModelType.ADABoost:
+
+            return AdaBoostClassifier(**arguments)
+
+        case ModelType.Voting:
+
+            return VotingClassifier(**arguments)
 
 
 # %%
