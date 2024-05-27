@@ -342,8 +342,8 @@ def conductExperiments(
     totalNumberOfExperiments = getTotalNoOfExperiments(models, featureSelectors)
     experimentCount = 0
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_orig, y_orig)
+    # scaler = StandardScaler()
+    # X_scaled = scaler.fit_transform(X_orig, y_orig)
     for featureSelector in featureSelectors:
         for featureSelectorParameters in featureSelector["parameters"]:
             try:
@@ -352,7 +352,7 @@ def conductExperiments(
                     featureSelector["model"], featureSelectorParameters
                 )
 
-                X_new = selector.fit_transform(X_scaled, y_orig)
+                X_new = selector.fit_transform(X_orig, y_orig)
 
                 endFeatureSelector = time.time()
 
