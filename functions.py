@@ -1095,6 +1095,7 @@ def filterDataframeByBestResults(resultsDf):
 
 
 def addColumnsScalerGenerator(resultsDf):
+    """Conform the old version of dataset to new format"""
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 1]] = {}
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 2]] = (
         FeatureGenerator.NoFeatureGeneration.name
