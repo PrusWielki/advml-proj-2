@@ -8,7 +8,7 @@ also test vanilla xgboost
 
 Voting when voting=hard has no predict proba so dont use it
 
-Try to rerun the best models with scaled data, test different scalers, standard scaler, robust scaler
+Try to rerun the best models (max 2, 1 feature selector) with scaled data, test different scalers, standard scaler, robust scaler
 
 Also test adding polynomial features with different degrees
 
