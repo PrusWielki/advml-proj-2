@@ -20,7 +20,7 @@ from sklearn.feature_selection import (
     SelectFwe,
 )
 from sklearn.svm import SVC
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import PolynomialFeatures, RobustScaler, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
@@ -45,6 +45,10 @@ RESULTS_COLUMNS = [
     "model_parameters",
     "feature_selector",
     "selector_parameters",
+    "scaler",
+    "scaler_parameters",
+    "feature_generator",
+    "feature_generator_parameters",
 ]
 
 # %%
@@ -240,6 +244,61 @@ def getFeatureSelector(selectorType, arguments):
             return SelectFwe(**arguments)
 
 
+class NoScaling:
+
+    def fit_transform(self, X):
+        return X
+
+
+class Scaler(Enum):
+
+    NoScaling = 0
+
+    Standard = 1
+
+    Robust = 2
+
+
+def getScaler(scalerType, arguments):
+
+    match scalerType:
+
+        case Scaler.NoScaling:
+
+            return NoScaling()
+
+        case Scaler.Standard:
+
+            return StandardScaler(**arguments)
+
+        case Scaler.Robust:
+
+            return RobustScaler(**arguments)
+
+
+class FeatureGenerator(Enum):
+
+    NoFeatureGeneration = 0
+
+    Polynomial = 1
+
+
+class NoFeatureGeneration:
+    def fit_transform(self, X):
+        return X
+
+
+def getFeatureGenerator(generatorType, arguments):
+    match generatorType:
+        case FeatureGenerator.NoFeatureGeneration:
+
+            return NoFeatureGeneration()
+
+        case FeatureGenerator.Polynomial:
+
+            return PolynomialFeatures(**arguments)
+
+
 # %% [markdown]
 # ## Experiment process
 
@@ -342,8 +401,174 @@ def performExperiment(X_train, y_train, X_test, y_test, model, limit, getLimited
 
 
 # %%
+def conductExperimentsWithScalersAndGenerators(
+    models,
+    featureSelectors,
+    X_orig,
+    y_orig,
+    scalers,
+    featureGenerators,
+    limit=0.8,
+    getLimitedScore=False,
+):
+    """Collects score results for all provided models and feature selectors on given dataset
+
+    Parameters:
+
+    models: array in a format: [{"model":"model name","parameters":[{paramters object}]}]
+
+    featureSelectors: array in a format: [{"model":"model name","parameters":[{paramters object}]}]
+
+
+    """
+    results = []
+    totalNumberOfExperiments = getTotalNoOfExperiments(models, featureSelectors)
+    experimentCount = 0
+    for scaler in scalers:
+        scaler = getScaler(scaler["model"], scaler["arguments"])
+        X_scaled = scaler.fit_transform(X_orig, y_orig)
+        for featureSelector in featureSelectors:
+            for featureSelectorParameters in featureSelector["parameters"]:
+                try:
+                    startFeatureSelector = time.time()
+                    selector = getFeatureSelector(
+                        featureSelector["model"], featureSelectorParameters
+                    )
+
+                    X_new = selector.fit_transform(X_scaled, y_orig)
+
+                    endFeatureSelector = time.time()
+
+                    for featureGenerator in featureGenerators:
+                        featureGenerator = getFeatureGenerator(
+                            featureGenerator["model"], featureGenerator["parameters"]
+                        )
+                        X_new = featureGenerator.fit_transform(X_new)
+
+                        if len(X_new[0]) > 1:
+                            X_split_train, X_split_test, y_split_train, y_split_test = (
+                                train_test_split(
+                                    X_new, y_orig, test_size=0.33, random_state=42
+                                )
+                            )
+                            # print(len(y_split_test[y_split_test==1]))
+                            for model in models:
+                                for modelParameters in model["parameters"]:
+
+                                    # clf = Pipeline(
+                                    #     [
+                                    #         ("scaling", StandardScaler()),
+                                    #         (
+                                    #             "feature_selection",
+                                    #             getFeatureSelector(
+                                    #                 featureSelector["model"], featureSelectorParameters
+                                    #             ),
+                                    #         ),
+                                    #         (
+                                    #             "classification",
+                                    #             getModel(model["model"], modelParameters),
+                                    #         ),
+                                    #     ]
+                                    # )
+                                    try:
+                                        # X_new = selector.fit_transform(X_orig, y_orig)
+                                        startModel = time.time()
+                                        (
+                                            correct,
+                                            score,
+                                            accuracy,
+                                            numberOfFeatures,
+                                            precision,
+                                        ) = performExperiment(
+                                            X_train=X_split_train,
+                                            y_train=y_split_train,
+                                            X_test=X_split_test,
+                                            y_test=y_split_test,
+                                            model=getModel(
+                                                model["model"], modelParameters
+                                            ),
+                                            limit=limit,
+                                            getLimitedScore=getLimitedScore,
+                                        )
+
+                                        results.append(
+                                            [
+                                                score,
+                                                correct,
+                                                accuracy,
+                                                precision,
+                                                numberOfFeatures,
+                                                model["model"].name,
+                                                modelParameters,
+                                                featureSelector["model"].name,
+                                                featureSelectorParameters,
+                                                scaler["model"].name,
+                                                scaler["parameters"],
+                                                featureGenerator["model"].name,
+                                                featureGenerator["parameters"],
+                                            ]
+                                        )
+                                        endModel = time.time()
+                                        experimentCount += 1
+                                        print(
+                                            "Performed Experiment",
+                                            str(experimentCount)
+                                            + "/"
+                                            + str(totalNumberOfExperiments)
+                                            + "(approx)",
+                                            "took (s):",
+                                            "model:",
+                                            str(round(endModel - startModel, 2)),
+                                            "selector",
+                                            str(
+                                                round(
+                                                    endFeatureSelector
+                                                    - startFeatureSelector,
+                                                    2,
+                                                )
+                                            ),
+                                            "with:",
+                                            featureSelector["model"],
+                                            featureSelectorParameters,
+                                            model["model"],
+                                            modelParameters,
+                                        )
+                                    except Exception as e:
+                                        print(
+                                            "!!!Experiment failed for:",
+                                            featureSelector["model"],
+                                            featureSelectorParameters,
+                                            model["model"],
+                                            modelParameters,
+                                            str(e),
+                                        )
+
+                        else:
+                            print(
+                                "!!!",
+                                featureSelector["model"],
+                                "produced 1 or fewer features with parameters:",
+                                featureSelectorParameters,
+                            )
+                except Exception as e:
+                    print(
+                        "!!!Experiment failed for:",
+                        featureSelector["model"],
+                        featureSelectorParameters,
+                        model["model"],
+                        modelParameters,
+                        str(e),
+                    )
+    return results
+
+
 def conductExperiments(
-    models, featureSelectors, X_orig, y_orig, limit=0.8, getLimitedScore=False
+    models,
+    featureSelectors,
+    X_orig,
+    y_orig,
+    limit=0.8,
+    getLimitedScore=False,
 ):
     """Collects score results for all provided models and feature selectors on given dataset
 
@@ -359,7 +584,6 @@ def conductExperiments(
     totalNumberOfExperiments = getTotalNoOfExperiments(models, featureSelectors)
     experimentCount = 0
 
-    # scaler = StandardScaler()
     # X_scaled = scaler.fit_transform(X_orig, y_orig)
     for featureSelector in featureSelectors:
         for featureSelectorParameters in featureSelector["parameters"]:
@@ -442,7 +666,8 @@ def conductExperiments(
                                     "selector",
                                     str(
                                         round(
-                                            endFeatureSelector - startFeatureSelector, 2
+                                            endFeatureSelector - startFeatureSelector,
+                                            2,
                                         )
                                     ),
                                     "with:",
@@ -555,6 +780,29 @@ def extractParameterResults(resultsDf, models, featureSelectors):
     parameters = parameters + generateParameters(
         [parameterName, parameterColumnName], locals()
     )
+    newDf = resultsDf.copy()
+    for parameter in parameters:
+        extractParamterInformation(newDf, **parameter)
+    return newDf, parameters
+
+
+def extractParameterResultsArr(resultsDf, modelsArr, parameterColumnNameArr):
+    """Extract parameters from results for further results processing
+
+    Prepares resulting parameters for further processing and appends
+    resultsDf with columns corresponding to said parameters
+    returns new dataframe and parameters
+    """
+    parameters = []
+    for i, parameterColumnName in enumerate(parameterColumnNameArr):
+
+        parameterName = []
+        for model in modelsArr[i]:
+            parameterName.append(list(model["parameters"][0].keys()))
+        parameterName = list(set(flattenArray(parameterName)))
+        parameters = parameters + generateParameters(
+            [parameterName, parameterColumnName], locals()
+        )
     newDf = resultsDf.copy()
     for parameter in parameters:
         extractParamterInformation(newDf, **parameter)
@@ -844,3 +1092,13 @@ def filterDataframeByBestResults(resultsDf):
     """
     filteredDf = resultsDf.copy()
     return filteredDf[filteredDf["score"] == filteredDf["score"].max()]
+
+
+def addColumnsScalerGenerator(resultsDf):
+    """Conform the old version of dataset to new format"""
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 1]] = {}
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 2]] = (
+        FeatureGenerator.NoFeatureGeneration.name
+    )
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 3]] = {}
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 4]] = Scaler.NoScaling.name

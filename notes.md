@@ -1,5 +1,17 @@
 # Notes
 
+TODO: It seems it's either Gradient Boosting or MLP Classifier with K Best or RFS, rather K Best. So test more Gradient Boosting vs MLP on K Best and RFS
+
+Also try more with AdaBoost, it doesn't work with MLP Classifiers, so use something else
+
+also test vanilla xgboost
+
+Voting when voting=hard has no predict proba so dont use it
+
+Try to rerun the best models (max 2, 1 feature selector) with scaled data, test different scalers, standard scaler, robust scaler
+
+Also test adding polynomial features with different degrees
+
 ## Main Description
 
 Emm I read the pdf and it's a bit hard to split this project into tasks tbh. From what I understood the goal, in short, is to achieve the best possible accuracy with least amount of features used. Whereas there is some reward for higher accuracy and penalty for number of features used so we need to find a proper balance. 5 different approaches should be used. It is a binary classification task. So I think we could:
