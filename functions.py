@@ -1092,3 +1092,12 @@ def filterDataframeByBestResults(resultsDf):
     """
     filteredDf = resultsDf.copy()
     return filteredDf[filteredDf["score"] == filteredDf["score"].max()]
+
+
+def addColumnsScalerGenerator(resultsDf):
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 1]] = {}
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 2]] = (
+        FeatureGenerator.NoFeatureGeneration.name
+    )
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 3]] = {}
+    resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 4]] = Scaler.NoScaling.name
