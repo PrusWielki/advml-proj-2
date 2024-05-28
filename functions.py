@@ -314,6 +314,25 @@ def getTotalNoOfExperiments(models, featureSelectors):
     return modelCount * selectorCount
 
 
+def getTotalNoOfExperimentsWithScalersAndGenerators(
+    models, featureSelectors, scalers, generators
+):
+    modelCount = 0
+    selectorCount = 0
+    scalerCount = 0
+    generatorCount = 0
+
+    for model in scalers:
+        scalerCount += len(model["parameters"])
+    for model in generators:
+        generatorCount += len(model["parameters"])
+    for model in models:
+        modelCount += len(model["parameters"])
+    for featureSelector in featureSelectors:
+        selectorCount += len(featureSelector["parameters"])
+    return modelCount * selectorCount * scalerCount * generatorCount
+
+
 # %%
 def getScore(y_true, y_pred, featuresUsed):
     """Get score based on y_true, y_pred and number of feature used
@@ -422,7 +441,9 @@ def conductExperimentsWithScalersAndGenerators(
 
     """
     results = []
-    totalNumberOfExperiments = getTotalNoOfExperiments(models, featureSelectors)
+    totalNumberOfExperiments = getTotalNoOfExperimentsWithScalersAndGenerators(
+        models, featureSelectors, scalers, featureGenerators
+    )
     experimentCount = 0
     for scaler in scalers:
         scaler = getScaler(scaler["model"], scaler["arguments"])
