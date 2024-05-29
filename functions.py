@@ -445,23 +445,23 @@ def conductExperimentsWithScalersAndGenerators(
         models, featureSelectors, scalers, featureGenerators
     )
     experimentCount = 0
-    for scaler in scalers:
-        for scalerParameters in scaler["parameters"]:
+    for featureSelector in featureSelectors:
+        for featureSelectorParameters in featureSelector["parameters"]:
+
             try:
-                scalerInstance = getScaler(scaler["model"], scalerParameters)
-                X_scaled = scalerInstance.fit_transform(X_orig, y_orig)
-                for featureSelector in featureSelectors:
-                    for featureSelectorParameters in featureSelector["parameters"]:
+                startFeatureSelector = time.time()
+                selector = getFeatureSelector(
+                    featureSelector["model"], featureSelectorParameters
+                )
 
-                        startFeatureSelector = time.time()
-                        selector = getFeatureSelector(
-                            featureSelector["model"], featureSelectorParameters
-                        )
+                X_new = selector.fit_transform(X_orig, y_orig)
 
-                        X_new = selector.fit_transform(X_scaled, y_orig)
+                endFeatureSelector = time.time()
+                for scaler in scalers:
+                    for scalerParameters in scaler["parameters"]:
 
-                        endFeatureSelector = time.time()
-
+                        scalerInstance = getScaler(scaler["model"], scalerParameters)
+                        X_scaled = scalerInstance.fit_transform(X_new, y_orig)
                         for featureGenerator in featureGenerators:
                             for featureGeneratorParameters in featureGenerator[
                                 "parameters"
@@ -470,16 +470,21 @@ def conductExperimentsWithScalersAndGenerators(
                                     featureGenerator["model"],
                                     featureGeneratorParameters,
                                 )
-                                X_new = featureGeneratorInstance.fit_transform(X_new)
+                                X_scaled = featureGeneratorInstance.fit_transform(
+                                    X_scaled
+                                )
 
-                                if len(X_new[0]) > 1:
+                                if len(X_scaled[0]) > 1:
                                     (
                                         X_split_train,
                                         X_split_test,
                                         y_split_train,
                                         y_split_test,
                                     ) = train_test_split(
-                                        X_new, y_orig, test_size=0.33, random_state=42
+                                        X_scaled,
+                                        y_orig,
+                                        test_size=0.33,
+                                        random_state=42,
                                     )
                                     # print(len(y_split_test[y_split_test==1]))
                                     for model in models:
