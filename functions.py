@@ -33,6 +33,7 @@ from sklearn.ensemble import (
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_score
 import time
+import xgboost as xgb
 
 
 RESULTS_COLUMNS = [
@@ -131,6 +132,8 @@ class ModelType(Enum):
 
     Voting = 9
 
+    XGBoost = 10
+
 
 # %%
 def getModel(modelType, arguments):
@@ -177,6 +180,12 @@ def getModel(modelType, arguments):
         case ModelType.Voting:
 
             return VotingClassifier(**arguments)
+
+        case ModelType.XGBoost:
+
+            clf = xgb.XGBClassifier()
+            clf.set_params(**arguments)
+            return clf
 
 
 # %%
