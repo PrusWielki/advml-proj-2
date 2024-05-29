@@ -452,7 +452,7 @@ def conductExperimentsWithScalersAndGenerators(
                 X_scaled = scalerInstance.fit_transform(X_orig, y_orig)
                 for featureSelector in featureSelectors:
                     for featureSelectorParameters in featureSelector["parameters"]:
-                    
+
                         startFeatureSelector = time.time()
                         selector = getFeatureSelector(
                             featureSelector["model"], featureSelectorParameters
@@ -463,17 +463,23 @@ def conductExperimentsWithScalersAndGenerators(
                         endFeatureSelector = time.time()
 
                         for featureGenerator in featureGenerators:
-                            for featureGeneratorParameters in featureGenerator["parameters"]:
+                            for featureGeneratorParameters in featureGenerator[
+                                "parameters"
+                            ]:
                                 featureGeneratorInstance = getFeatureGenerator(
-                                    featureGenerator["model"], featureGeneratorParameters
+                                    featureGenerator["model"],
+                                    featureGeneratorParameters,
                                 )
                                 X_new = featureGeneratorInstance.fit_transform(X_new)
 
                                 if len(X_new[0]) > 1:
-                                    X_split_train, X_split_test, y_split_train, y_split_test = (
-                                        train_test_split(
-                                            X_new, y_orig, test_size=0.33, random_state=42
-                                        )
+                                    (
+                                        X_split_train,
+                                        X_split_test,
+                                        y_split_train,
+                                        y_split_test,
+                                    ) = train_test_split(
+                                        X_new, y_orig, test_size=0.33, random_state=42
                                     )
                                     # print(len(y_split_test[y_split_test==1]))
                                     for model in models:
@@ -542,7 +548,9 @@ def conductExperimentsWithScalersAndGenerators(
                                                     + "(approx)",
                                                     "took (s):",
                                                     "model:",
-                                                    str(round(endModel - startModel, 2)),
+                                                    str(
+                                                        round(endModel - startModel, 2)
+                                                    ),
                                                     "selector",
                                                     str(
                                                         round(
@@ -559,8 +567,7 @@ def conductExperimentsWithScalersAndGenerators(
                                                     scaler["model"],
                                                     scalerParameters,
                                                     featureGenerator["model"],
-                                                    featureGeneratorParameters
-
+                                                    featureGeneratorParameters,
                                                 )
                                             except Exception as e:
                                                 print(
@@ -832,6 +839,7 @@ def extractParameterResultsArr(resultsDf, modelsArr, parameterColumnNameArr):
     """
     parameters = []
     for i, parameterColumnName in enumerate(parameterColumnNameArr):
+        parameterColumnName = [parameterColumnName]
 
         parameterName = []
         for model in modelsArr[i]:
