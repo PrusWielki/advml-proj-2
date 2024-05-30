@@ -34,6 +34,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_score
 import time
 import xgboost as xgb
+from sklearn.decomposition import PCA
 
 
 RESULTS_COLUMNS = [
@@ -206,6 +207,8 @@ class FeatureSelectorType(Enum):
 
     FWE = 6
 
+    PCA = 7
+
 
 # %%
 class NoFeatureSelection:
@@ -251,6 +254,10 @@ def getFeatureSelector(selectorType, arguments):
         case FeatureSelectorType.FWE:
 
             return SelectFwe(**arguments)
+        
+        case FeatureSelectorType.PCA:
+
+            return PCA(**arguments)
 
 
 class NoScaling:
