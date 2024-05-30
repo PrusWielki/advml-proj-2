@@ -254,7 +254,7 @@ def getFeatureSelector(selectorType, arguments):
         case FeatureSelectorType.FWE:
 
             return SelectFwe(**arguments)
-        
+
         case FeatureSelectorType.PCA:
 
             return PCA(**arguments)
