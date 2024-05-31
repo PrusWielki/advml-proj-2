@@ -1169,15 +1169,19 @@ def addColumnsScalerGenerator(resultsDf):
     )
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 3]] = {}
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 4]] = Scaler.NoScaling.name
-    
 
 
 def extractAllUniqueParameters(resultsDf, columns, paramColumns):
     result = {}
     for i, column in enumerate(columns):
         grouped = resultsDf.groupby(column)
-        paramArr = []
+
         for name, group in grouped:
+            paramArr = []
+
             group.apply(lambda x: paramArr.append(x[paramColumns[i]]), axis=1)
-        result[name] = join(paramArr)
+            paramArrDf = pd.DataFrame.from_dict(paramArr)
+
+            result[name] = paramArrDf
+
     return result
