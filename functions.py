@@ -35,7 +35,6 @@ from sklearn.metrics import accuracy_score, precision_score
 import time
 import xgboost as xgb
 from sklearn.decomposition import PCA
-from funcy import join
 
 
 RESULTS_COLUMNS = [
@@ -819,25 +818,6 @@ def extractParamterInformation(df, parameterColumnName, parameterName):
     )
 
 
-def extractParamterInformationNew(df, parameterColumnName, parameterName, modelName):
-    """
-    Extract information about certain parameter and include it with
-    the dataframe as a separate column in a format parameterColumnName+"_"+parameterName
-    to avoid conflicts between model parameters and feature selector parameters
-    MODIFIES THE PROVIDED DF
-    DIFFERENT NAMING CONVENTION
-    """
-
-    df[getParameterName(modelName, parameterName)] = df.apply(
-        lambda x: (
-            processParameter(x[parameterColumnName][parameterName])
-            if parameterName in x[parameterColumnName].keys()
-            else pd.NA
-        ),
-        axis=1,
-    )
-
-
 # %%
 def extractParameterResults(resultsDf, models, featureSelectors):
     """Extract parameters from results for further results processing
@@ -1204,31 +1184,3 @@ def extractAllUniqueParameters(resultsDf, columns, paramColumns):
             result[name] = paramArrDf
 
     return result
-
-
-def extractParameterResultsNew(resultsDf, modelsArr, parameterColumnNameArr):
-    """Extract parameters from results for further results processing
-
-    Prepares resulting parameters for further processing and appends
-    resultsDf with columns corresponding to said parameters
-    returns new dataframe and parameters
-    """
-    parameters = []
-    for i, parameterColumnName in enumerate(parameterColumnNameArr):
-        parameterColumnName = [parameterColumnName]
-
-        parameterName = []
-        for model in modelsArr[i]:
-            parameterName.append(list(model["parameters"][0].keys()))
-        parameterName = list(set(flattenArray(parameterName)))
-        parameters = parameters + generateParameters(
-            [
-                parameterName,
-                parameterColumnName,
-            ],
-            locals(),
-        )
-    newDf = resultsDf.copy()
-    for parameter in parameters:
-        extractParamterInformationNew(newDf, **parameter)
-    return newDf, parameters
