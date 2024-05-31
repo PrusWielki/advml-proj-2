@@ -1169,6 +1169,7 @@ def addColumnsScalerGenerator(resultsDf):
     )
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 3]] = {}
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 4]] = Scaler.NoScaling.name
+    
 
 
 def extractAllUniqueParameters(resultsDf, columns, paramColumns):
