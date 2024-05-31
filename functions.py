@@ -35,6 +35,7 @@ from sklearn.metrics import accuracy_score, precision_score
 import time
 import xgboost as xgb
 from sklearn.decomposition import PCA
+from funcy import join
 
 
 RESULTS_COLUMNS = [
@@ -1168,3 +1169,14 @@ def addColumnsScalerGenerator(resultsDf):
     )
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 3]] = {}
     resultsDf[RESULTS_COLUMNS[len(RESULTS_COLUMNS) - 4]] = Scaler.NoScaling.name
+
+
+def extractAllUniqueParameters(resultsDf, columns, paramColumns):
+    result = {}
+    for i, column in enumerate(columns):
+        grouped = resultsDf.groupby(column)
+        paramArr = []
+        for name, group in grouped:
+            group.apply(lambda x: paramArr.append(x[paramColumns[i]]), axis=1)
+        result[name] = join(paramArr)
+    return result
