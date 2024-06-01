@@ -1,16 +1,96 @@
 # Notes
 
-TODO: It seems it's either Gradient Boosting or MLP Classifier with K Best or RFS, rather K Best. So test more Gradient Boosting vs MLP on K Best and RFS
+# Experiment process
 
-Also try more with AdaBoost, it doesn't work with MLP Classifiers, so use something else
+The experiments have been performed in batches. Each batch contains a number of feature selectors, classifiers, data scalers (or none) and feature generators (or none). For each of these different parameters are selected and each combination is measured in terms of score, accuracy, number of True Positives and precision. We measure the score similarly as per task description. The X_train and y_train are split into train-test splits, next when measuring the score we take a certain percentage (45%) of True positives from the split y test, let's call that number n. After we predict the probabilities for the positive class for split x test, we take only n predictions with highest probability, then the score is calculated as (the number of correct predictions * 10 - 200* number of features used)/(n*10-400). Where (n*10-400) is considered by us the ideal score. In general, the aim of the first 5 batches was to compare the performance of different feature selectors such as KBest, RFE, RFECV, FPR (also FDR and FWE but they failed to produce any results) with different parameters on some basic classifiers such as LDA, QDA, KNN, SVC, Gradient Boosting, Histogram-based Gradient Boosting and MLP Classifier. Next the best feature selector candidates have been chosen and we began to test different parameters for the classifiers, including XGBoost, Voting and all the previously mentioned classifiers. The two best candidates appeared to be Gradient Boosting and MLP Classifier, therefore the next couple of batches were dedicated to finding the best parameters for each of them. At this stage we also included data scalers such as the Standard Scaler and Robust scaler. We also tried to generated some additional features from the already selected features by using a Polynomial feature generator. The results were that the Robust data scaler provides a slight improvement in score for the MLP Classifier, and polynomial feature generator in general doesn't provide much benefit. Finally, we have chosen the MLP classifier with Robust data scaler, and KBest feature selector as our final model and performed a few more batches to find the most optimal parameters. The number of experiments performed is 101261.
 
-also test vanilla xgboost
 
-Voting when voting=hard has no predict proba so dont use it
+# Models to check:
 
-Try to rerun the best models (max 2, 1 feature selector) with scaled data, test different scalers, standard scaler, robust scaler
+1. [HistGradientBoostingClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html#sklearn.ensemble.HistGradientBoostingClassifier)
+   - learning_rate = [0.1, 0.01]
+   - max_depth = [2,3,5]
+   - random_state = [42]
+   - max_features = [3, 5, 8, 1.0]
+   - l2_regularization = [0, 0.5, 0.8]
+2. LDA
 
-Also test adding polynomial features with different degrees
+   - solver = ['svd', 'lsqr']
+   - shrinkage = [None, 'auto']
+   - n_components = [3,5,8]
+
+3. QDA
+   - reg_param = [0.3,0.5,0.8]
+4. KNN
+   - n_neighbors = [3,5,8]
+   - weights = ['uniform','distance']
+   - p = [1,2]
+   - leaf_size = [15,30,50]
+5. SVM
+   - C = [0.5,1,1.5]
+   - kernel = ['linear','rbf','sigmoid','poly']
+6. [GradientBoostingClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier)
+
+   - loss = ['log_loss', 'exponential']
+   - learning_rate = [0.1, 0.01]
+   - n_estimators = [100, 200]
+   - subsample = [1.0, 0.7]
+   - max_depth = [2,3,5]
+   - random_state = [42]
+   - max_features = [3, 5, 8, None]
+   - ccp_alpha = [0, 0.01, 0.05, 0.1]
+
+7. [Voting?](https://scikit-learn.org/stable/modules/ensemble.html#voting-classifier)
+
+# Feature Selectors to check:
+
+1. KBest
+   1. Parameters:
+      - k: 5,10,20,40,80
+      - socre_func: f_classif, mutual_info_classif
+2. FPR
+   1. Parameters:
+      - score_func: f_classif, mutual_info_classif
+      - alpha: 0.001, 0.01, 0.05, 0.1
+3. FDR
+   1. Parameters:
+      - score_func: f_classif, mutual_info_classif
+      - alpha: 0.001, 0.01, 0.05, 0.1
+4. Fwe
+   1. Parameters:
+      - score_func: f_classif, mutual_info_classif
+      - alpha: 0.001, 0.01, 0.05, 0.1
+5. KBest with one of the above as score func? Just some best values
+6. Some tree based
+   1. Parameters:
+      - The same as chosen classifier, can be the same as GradientBoostingClassifier for example
+7. RFE
+   1. Parameters:
+      - estimator: KNeighborsClassifier (n_neighbors=sqrt(number of features to select)), svc(kernel="linear", "rbf"),DecisionTreeClassifier()
+      - n_features_to_select: 5, 10, 20
+      - step: 0.5, 0.2
+8. RFECV
+   1. Parameters:
+      - estimator: KNeighborsClassifier (n_neighbors=sqrt(number of features to select)), , svc(kernel="linear", "rbf"),DecisionTreeClassifier()
+      - step: 0.5, 0.2
+      - min_features_to_select: 5,10,20
+      - cv: 5, 10, 15
+9. SequentialFeatureSelector:
+   1. Parameters:
+      - estimator: KNeighborsClassifier (n_neighbors=sqrt(number of features to select)), , svc(kernel="linear", "rbf"),DecisionTreeClassifier()
+      - n_features_to_select: 5, 10, 20
+
+# Batches based on the above:
+
+1.  1. Models: LDA, QDA, KNN, svc, GradientBoosting, HistGradientBoosting. Basic params
+    2. Selectors: KBest
+1.  1. Models: LDA, QDA, KNN, svc, GradientBoosting, HistGradientBoosting. Basic params
+    2. Selectors: KBest (with some best params), FPR, FDR, FWE
+1.  Similar to the above but with better params
+1.  1. Models: LDA, QDA, KNN, svc, GradientBoosting, HistGradientBoosting. Basic params
+    2. Selectors: Best from the above, RFE, RFECV, SequentialFeatureSelector (this batch will take ages)
+
+Next choose 3-5 best methods with some current best params and create batches for classifiers
 
 ## Main Description
 
