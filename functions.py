@@ -25,6 +25,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import (
+    ExtraTreesClassifier,
     HistGradientBoostingClassifier,
     GradientBoostingClassifier,
     AdaBoostClassifier,
@@ -135,6 +136,8 @@ class ModelType(Enum):
 
     XGBoost = 10
 
+    ExtraTrees = 11
+
 
 # %%
 def getModel(modelType, arguments):
@@ -187,6 +190,10 @@ def getModel(modelType, arguments):
             clf = xgb.XGBClassifier()
             clf.set_params(**arguments)
             return clf
+
+        case ModelType.ExtraTrees:
+
+            return ExtraTreesClassifier(**arguments)
 
 
 # %%
